@@ -1,11 +1,11 @@
-# Installs the boss skill on Windows: installs missing requirements with winget (Git for Windows,
-# whose Git Bash runs the skill's hook and worker status line commands; Windows Terminal), checks
-# for claude and the wrapup skill, then copies this folder to ~\.claude\skills\boss, keeping the
+# Installs the lead skill on Windows: installs missing requirements with winget (Git for Windows,
+# whose Git Bash runs the skill's hook and teammate status line commands; Windows Terminal), checks
+# for claude and the wrapup skill, then copies this folder to ~\.claude\skills\lead, keeping the
 # runtime state\ already there.
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
 $ErrorActionPreference = 'Stop'
 $src = $PSScriptRoot
-$dest = Join-Path $HOME '.claude\skills\boss'
+$dest = Join-Path $HOME '.claude\skills\lead'
 
 function Test-GitBash {
     if ($env:CLAUDE_CODE_GIT_BASH_PATH -and (Test-Path $env:CLAUDE_CODE_GIT_BASH_PATH)) { return $true }
@@ -27,9 +27,9 @@ function Install-WithWinget([string]$Id, [string]$What) {
 $script:restart = $false
 if (-not (Test-GitBash)) { Install-WithWinget 'Git.Git' 'Git for Windows (Git Bash)' }
 if (-not (Get-Command wt.exe -ErrorAction SilentlyContinue)) { Install-WithWinget 'Microsoft.WindowsTerminal' 'Windows Terminal' }
-if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { Write-Warning "'claude' is not on PATH; workers need it." }
+if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { Write-Warning "'claude' is not on PATH; teammates need it." }
 if (-not (Test-Path (Join-Path $HOME '.claude\skills\wrapup\SKILL.md'))) {
-    Write-Warning 'No wrapup skill at ~\.claude\skills\wrapup; worker wrap-up reads it.'
+    Write-Warning 'No wrapup skill at ~\.claude\skills\wrapup; teammate wrap-up reads it.'
 }
 
 if ((Resolve-Path $src).Path -ne $dest) {

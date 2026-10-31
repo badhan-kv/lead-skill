@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Runs the boss script NAME for this OS: scripts/NAME.ps1 under PowerShell on Windows (where Claude
+# Runs the lead script NAME for this OS: scripts/NAME.ps1 under PowerShell on Windows (where Claude
 # Code runs hook and status line commands through Git Bash), scripts/NAME.sh under bash elsewhere.
-# Lets SKILL.md's hook and worker-settings.json use one command string on both. stdin passes through.
+# Lets SKILL.md's hook and teammate-settings.json use one command string on both. stdin passes through.
 # Usage: run-for-os.sh NAME [ARGS...]
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 name=$1; shift

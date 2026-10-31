@@ -1,4 +1,4 @@
-# Shared helpers for the boss skill scripts. Dot-source this file.
+# Shared helpers for the lead skill scripts. Dot-source this file.
 
 $script:SkillDir = Split-Path -Parent $PSScriptRoot
 
@@ -10,45 +10,45 @@ function Write-Utf8NoBom([string]$Path, [string]$Text) {
 
 function Get-AgentsDir([string]$Root) { Join-Path $Root '.agents' }
 
-function Get-WorkerFile([string]$Root, [string]$Name) {
-    Join-Path (Get-AgentsDir $Root) "workers\$Name.json"
+function Get-TeammateFile([string]$Root, [string]$Name) {
+    Join-Path (Get-AgentsDir $Root) "teammates\$Name.json"
 }
 
-function Read-Worker([string]$Root, [string]$Name) {
-    $f = Get-WorkerFile $Root $Name
+function Read-Teammate([string]$Root, [string]$Name) {
+    $f = Get-TeammateFile $Root $Name
     if (-not (Test-Path $f)) { return $null }
     Get-Content -Raw -Encoding UTF8 $f | ConvertFrom-Json
 }
 
-function Save-Worker([string]$Root, $Worker) {
-    Write-Utf8NoBom (Get-WorkerFile $Root $Worker.name) ($Worker | ConvertTo-Json -Depth 5)
+function Save-Teammate([string]$Root, $Teammate) {
+    Write-Utf8NoBom (Get-TeammateFile $Root $Teammate.name) ($Teammate | ConvertTo-Json -Depth 5)
 }
 
-function Set-WorkerField([string]$Root, [string]$Name, [hashtable]$Fields) {
-    $w = Read-Worker $Root $Name
-    if (-not $w) { throw "No worker '$Name' registered under $Root\.agents\workers" }
+function Set-TeammateField([string]$Root, [string]$Name, [hashtable]$Fields) {
+    $w = Read-Teammate $Root $Name
+    if (-not $w) { throw "No teammate '$Name' registered under $Root\.agents\teammates" }
     foreach ($k in $Fields.Keys) {
         if ($w.PSObject.Properties[$k]) { $w.$k = $Fields[$k] }
         else { $w | Add-Member -NotePropertyName $k -NotePropertyValue $Fields[$k] }
     }
-    Save-Worker $Root $w
+    Save-Teammate $Root $w
 }
 
-# Colour coding: the boss is gold; each worker gets the first palette colour no running worker uses.
-$script:BossColor = '#FFB300'
-$script:WorkerPalette = @('#1E88E5', '#43A047', '#8E24AA', '#F4511E', '#00ACC1', '#D81B60', '#7CB342', '#5E35B1')
+# Colour coding: the lead is gold; each teammate gets the first palette colour no running teammate uses.
+$script:LeadColor = '#FFB300'
+$script:TeammatePalette = @('#1E88E5', '#43A047', '#8E24AA', '#F4511E', '#00ACC1', '#D81B60', '#7CB342', '#5E35B1')
 
-function Get-FreeWorkerColor([string]$Root) {
+function Get-FreeTeammateColor([string]$Root) {
     $used = @()
-    $dir = Join-Path (Get-AgentsDir $Root) 'workers'
+    $dir = Join-Path (Get-AgentsDir $Root) 'teammates'
     if (Test-Path $dir) {
         foreach ($f in Get-ChildItem $dir -Filter '*.json') {
             $w = Get-Content -Raw -Encoding UTF8 $f.FullName | ConvertFrom-Json
             if ($w.color -and $w.status -ne 'closed') { $used += $w.color }
         }
     }
-    foreach ($c in $script:WorkerPalette) { if ($used -notcontains $c) { return $c } }
-    $script:WorkerPalette[$used.Count % $script:WorkerPalette.Count]
+    foreach ($c in $script:TeammatePalette) { if ($used -notcontains $c) { return $c } }
+    $script:TeammatePalette[$used.Count % $script:TeammatePalette.Count]
 }
 
 # ANSI true-colour foreground escape for a '#RRGGBB' colour.
@@ -58,9 +58,9 @@ function Get-AnsiColor([string]$Hex) {
         [Convert]::ToInt32($h.Substring(2, 2), 16), [Convert]::ToInt32($h.Substring(4, 2), 16)
 }
 
-# Permission mode the boss is in now (recorded by the boss skill's hook), as a claude CLI value.
-function Get-BossPermissionMode([string]$Root) {
-    $f = Join-Path (Get-AgentsDir $Root) 'boss.json'
+# Permission mode the lead is in now (recorded by the lead skill's hook), as a claude CLI value.
+function Get-LeadPermissionMode([string]$Root) {
+    $f = Join-Path (Get-AgentsDir $Root) 'lead.json'
     if (-not (Test-Path $f)) { return $null }
     $m = (Get-Content -Raw -Encoding UTF8 $f | ConvertFrom-Json).permissionMode
     if ($m -eq 'default') { return 'manual' }   # hooks report Manual as 'default'
@@ -68,17 +68,17 @@ function Get-BossPermissionMode([string]$Root) {
 }
 
 # Index of the selected tab in the foreground Windows Terminal window (the one 'wt -w 0' targets),
-# so a new worker tab can hand focus straight back to it. $null if it cannot be read.
+# so a new teammate tab can hand focus straight back to it. $null if it cannot be read.
 function Get-SelectedTabIndex {
     try {
         Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-        Add-Type -Namespace BossSkill -Name Win -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();' -ErrorAction SilentlyContinue
+        Add-Type -Namespace LeadSkill -Name Win -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();' -ErrorAction SilentlyContinue
         $ae = [Windows.Automation.AutomationElement]
         $wtCond = New-Object Windows.Automation.PropertyCondition($ae::ClassNameProperty, 'CASCADIA_HOSTING_WINDOW_CLASS')
         $tabCond = New-Object Windows.Automation.PropertyCondition($ae::ControlTypeProperty, [Windows.Automation.ControlType]::TabItem)
         $windows = @($ae::RootElement.FindAll([Windows.Automation.TreeScope]::Children, $wtCond))
         if (-not $windows) { return $null }
-        $fg = [BossSkill.Win]::GetForegroundWindow().ToInt64()
+        $fg = [LeadSkill.Win]::GetForegroundWindow().ToInt64()
         $win = $windows | Where-Object { $_.Current.NativeWindowHandle -eq $fg } | Select-Object -First 1
         if (-not $win) { $win = $windows[0] }
         $i = 0

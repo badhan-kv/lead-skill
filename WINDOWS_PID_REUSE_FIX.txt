@@ -1,88 +1,88 @@
-Task: fix PID reuse in the Windows (.ps1) scripts of the boss skill
+Task: fix PID reuse in the Windows (.ps1) scripts of the lead skill
 ====================================================================
 
 Problem
 -------
-The boss scripts decide whether a worker is still running by checking only that its recorded
-host PID exists (`Get-Process -Id $w.hostPid`). Windows reuses PIDs, so after a worker has
+The lead scripts decide whether a teammate is still running by checking only that its recorded
+host PID exists (`Get-Process -Id $w.hostPid`). Windows reuses PIDs, so after a teammate has
 exited, an unrelated later process can get the same PID. Then:
-- list-workers.ps1 shows the closed worker as Alive = True;
-- close-worker.ps1 would stop the children of, and then force-stop, the unrelated process;
-- spawn-worker.ps1 refuses to respawn a worker name ("already running").
+- list-teammates.ps1 shows the closed teammate as Alive = True;
+- close-teammate.ps1 would stop the children of, and then force-stop, the unrelated process;
+- spawn-teammate.ps1 refuses to respawn a teammate name ("already running").
 
-Seen on Linux on 2026-10-30: a closed worker's PID now belonged to the shell of the tmux "home"
+Seen on Linux on 2026-10-30: a closed teammate's PID now belonged to the shell of the tmux "home"
 window; a kill would have closed that window. The Linux scripts are fixed (see below); the
 Windows scripts still have the bug.
 
 How the Linux fix works (reference, already in the repo)
 --------------------------------------------------------
-- scripts/run-worker.sh records `hostStart` = the kernel start time of its own process
-  (/proc/<pid>/stat field 22) next to `hostPid` and `started` in .agents/workers/<name>.json.
-- scripts/common.sh has `worker_alive <worker JSON>`: alive only if the PID exists AND its start
+- scripts/run-teammate.sh records `hostStart` = the kernel start time of its own process
+  (/proc/<pid>/stat field 22) next to `hostPid` and `started` in .agents/teammates/<name>.json.
+- scripts/common.sh has `teammate_alive <teammate JSON>`: alive only if the PID exists AND its start
   time equals `hostStart`. Records written before the fix (no `hostStart`) fall back to
   comparing the process start time with the record's `started` time (within 10 s).
-- list-workers.sh, close-worker.sh and spawn-worker.sh call `worker_alive` instead of a bare
+- list-teammates.sh, close-teammate.sh and spawn-teammate.sh call `teammate_alive` instead of a bare
   PID check.
 
 What to change on Windows
 -------------------------
-1. scripts/run-worker.ps1, the line that writes `hostPid`:
+1. scripts/run-teammate.ps1, the line that writes `hostPid`:
    add `hostStart = (Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')`
-   to the hashtable passed to Set-WorkerField (keep hostPid, consolePid, started).
+   to the hashtable passed to Set-TeammateField (keep hostPid, consolePid, started).
 
 2. scripts/common.ps1: add a function, for example
 
-   function Test-WorkerAlive($Worker) {
-       if (-not $Worker -or -not $Worker.hostPid) { return $false }
-       $p = Get-Process -Id $Worker.hostPid -ErrorAction SilentlyContinue
+   function Test-TeammateAlive($Teammate) {
+       if (-not $Teammate -or -not $Teammate.hostPid) { return $false }
+       $p = Get-Process -Id $Teammate.hostPid -ErrorAction SilentlyContinue
        if (-not $p) { return $false }
        try { $start = $p.StartTime.ToUniversalTime() } catch { return $false }
-       if ($Worker.hostStart) {
-           $want = [datetime]::Parse($Worker.hostStart, $null,
+       if ($Teammate.hostStart) {
+           $want = [datetime]::Parse($Teammate.hostStart, $null,
                [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime()
            return [math]::Abs(($start - $want).TotalSeconds) -lt 1
        }
-       if ($Worker.started) {   # older record: 'started' is local time, format 's'
-           $want = ([datetime]$Worker.started).ToUniversalTime()
+       if ($Teammate.started) {   # older record: 'started' is local time, format 's'
+           $want = ([datetime]$Teammate.started).ToUniversalTime()
            return [math]::Abs(($start - $want).TotalSeconds) -le 10
        }
        return $true
    }
 
    Notes: StartTime can throw "Access is denied" for processes of another user or elevated
-   processes; treat that as "not our worker" (return $false), as above. ConvertFrom-Json in
+   processes; treat that as "not our teammate" (return $false), as above. ConvertFrom-Json in
    Windows PowerShell 5.1 may already turn an ISO 8601 string into a [datetime]; the Parse call
    must handle both a string and a [datetime] (e.g. convert with `[datetime]` first if it is not
    a string). Check which PowerShell the scripts run under (powershell.exe 5.1 or pwsh 7) and
    test with that one.
 
-3. Replace every bare PID check with Test-WorkerAlive:
-   - scripts/list-workers.ps1: `$alive = Test-WorkerAlive $w`
-   - scripts/close-worker.ps1: the early "not running" check, the wait loop and the final
-     force-stop check. Only stop children of / force-stop $w.hostPid when Test-WorkerAlive is
+3. Replace every bare PID check with Test-TeammateAlive:
+   - scripts/list-teammates.ps1: `$alive = Test-TeammateAlive $w`
+   - scripts/close-teammate.ps1: the early "not running" check, the wait loop and the final
+     force-stop check. Only stop children of / force-stop $w.hostPid when Test-TeammateAlive is
      true.
-   - scripts/spawn-worker.ps1: the "already running" check on $existing.
+   - scripts/spawn-teammate.ps1: the "already running" check on $existing.
    Search all .ps1 files for `Get-Process -Id` and `hostPid` to be sure none is missed.
 
 4. Do not change the Linux scripts, the JSON field names (hostPid, hostStart, started) or
-   anything else; Linux and Windows share the .agents/workers/*.json format.
+   anything else; Linux and Windows share the .agents/teammates/*.json format.
 
 How to verify (on Windows)
 --------------------------
 - Parse check: load each changed script with
   `[System.Management.Automation.Language.Parser]::ParseFile(...)` and confirm no errors.
-- Fake records against a live process, in a scratch folder with .agents\workers\:
+- Fake records against a live process, in a scratch folder with .agents\teammates\:
   start a process (`$p = Start-Process notepad -PassThru` or `Start-Process powershell
-  -ArgumentList '-NoProfile','-Command','Start-Sleep 300' -PassThru`), then write worker JSON
-  files and run list-workers.ps1 -Root <scratch>. Expected:
+  -ArgumentList '-NoProfile','-Command','Start-Sleep 300' -PassThru`), then write teammate JSON
+  files and run list-teammates.ps1 -Root <scratch>. Expected:
     good       hostPid=$p.Id, hostStart=its StartTime (UTC, 'o')        -> Alive True
     badstart   hostPid=$p.Id, hostStart=a time a day earlier            -> Alive False
     oldok      hostPid=$p.Id, no hostStart, started=its start (local 's') -> Alive True
     oldreused  hostPid=$p.Id, no hostStart, started=hours earlier        -> Alive False
     dead       hostPid=999999                                             -> Alive False
-- close-worker.ps1 -Name oldreused -Root <scratch> must print "not running (already closed)"
+- close-teammate.ps1 -Name oldreused -Root <scratch> must print "not running (already closed)"
   and leave the test process running. Stop the test process afterwards.
-- Live: spawn one real worker with spawn-worker.ps1, confirm its JSON has hostStart and
-  list-workers.ps1 shows Alive True; close it with close-worker.ps1 and confirm the tab closes
+- Live: spawn one real teammate with spawn-teammate.ps1, confirm its JSON has hostStart and
+  list-teammates.ps1 shows Alive True; close it with close-teammate.ps1 and confirm the tab closes
   and Alive turns False.
 - Record what was verified in BACKLOG.md under story 10 (append; do not rewrite older text).

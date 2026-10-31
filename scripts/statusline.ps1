@@ -1,19 +1,19 @@
-# Status line for worker sessions: worker name | task | context used.
+# Status line for teammate sessions: teammate name | task | context used.
 $j = $null
 try { $j = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch {}
 $e = [char]27
 
 $name = $env:AGENT_NAME
 if (-not $name -and $j) { $name = $j.session_name }
-if (-not $name) { $name = 'worker' }
+if (-not $name) { $name = 'teammate' }
 
-# Task: the worker's own .agents\tasks\<name>.txt (first line), else the task given at spawn.
-# Name colour: the worker's tab colour from the registry, else cyan.
+# Task: the teammate's own .agents\tasks\<name>.txt (first line), else the task given at spawn.
+# Name colour: the teammate's tab colour from the registry, else cyan.
 $task = ''
 $nameColor = "$e[1;36m"
 if ($env:AGENT_ROOT) {
     $tf = Join-Path $env:AGENT_ROOT ".agents\tasks\$name.txt"
-    $wf = Join-Path $env:AGENT_ROOT ".agents\workers\$name.json"
+    $wf = Join-Path $env:AGENT_ROOT ".agents\teammates\$name.json"
     $w = $null
     if (Test-Path $wf) { try { $w = Get-Content -Raw -Encoding UTF8 $wf | ConvertFrom-Json } catch {} }
     if (Test-Path $tf) {
@@ -36,7 +36,7 @@ if ($task) { $line = '{0}{1}{2}[0m | {3}{4}' -f $nameColor, $name, $e, $task, $c
 else { $line = '{0}{1}{2}[0m{3}' -f $nameColor, $name, $e, $ctx }
 $line
 
-# Keep the last shown line (without colours) so the boss can see what each tab displays.
+# Keep the last shown line (without colours) so the lead can see what each tab displays.
 if ($env:AGENT_ROOT -and $env:AGENT_NAME) {
     try {
         $dir = Join-Path $env:AGENT_ROOT '.agents\statusline'

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reopen a tmux window for every running worker that has none (e.g. after it was moved into a
+# Reopen a tmux window for every running teammate that has none (e.g. after it was moved into a
 # Claude background session, or after the tmux server ended), then optionally attach.
 # Usage: open-windows.sh [--root DIR] [--attach]
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -14,11 +14,11 @@ while [ $# -gt 0 ]; do
 done
 root=$(cd "$root" && pwd) || exit 1
 command -v tmux >/dev/null || { echo "tmux is required" >&2; exit 1; }
-sess=$(boss_tmux_session "$root")
+sess=$(lead_tmux_session "$root")
 
 shopt -s nullglob
 opened=0
-for f in "$root"/.agents/workers/*.json; do
+for f in "$root"/.agents/teammates/*.json; do
     name=$(jq -r .name "$f")
     win=$(jq -r '.tmuxWindow // empty' "$f")
     # Its window is still open: nothing to do.
@@ -33,7 +33,7 @@ for f in "$root"/.agents/workers/*.json; do
     tmux set-window-option -t "$wid" automatic-rename off >/dev/null
     tmux set-window-option -t "$wid" window-status-style "fg=$color,bold" >/dev/null
     tmux set-window-option -t "$wid" window-status-current-style "fg=black,bg=$color,bold" >/dev/null
-    set_worker "$root" "$name" '.status="background" | .bgId=$id | .tmuxSession=$s | .tmuxWindow=$w | .hostPid=null' \
+    set_teammate "$root" "$name" '.status="background" | .bgId=$id | .tmuxSession=$s | .tmuxWindow=$w | .hostPid=null' \
         --arg id "$bg" --arg s "$sess" --arg w "$wid"
     request_remote_tab "$sess" "$wid" "$name"
     echo "Opened window for '$name' (background session $bg) in tmux session $sess."
@@ -43,4 +43,4 @@ done
 if [ -n "$attach" ] && tmux has-session -t "=$sess" 2>/dev/null; then
     [ -t 0 ] && [ -t 1 ] && [ -z "${TMUX:-}" ] && exec tmux attach -t "=$sess"
 fi
-[ "$opened" -gt 0 ] || [ -n "$attach" ] || echo "No worker windows needed opening."
+[ "$opened" -gt 0 ] || [ -n "$attach" ] || echo "No teammate windows needed opening."

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Status line for worker sessions: the machine's normal status line (LINUX (SSH) tag, host, cwd,
-# model) followed by worker name | task | context used.
+# Status line for teammate sessions: the machine's normal status line (LINUX (SSH) tag, host, cwd,
+# model) followed by teammate name | task | context used.
 input=$(cat)
 
 # Machine-wide base line, unchanged.
@@ -8,12 +8,12 @@ base=""
 [ -f "$HOME/.claude/statusline.sh" ] && base=$(printf '%s' "$input" | bash "$HOME/.claude/statusline.sh")
 
 name=${AGENT_NAME:-$(jq -r '.session_name // empty' <<<"$input")}
-name=${name:-worker}
+name=${name:-teammate}
 
 task="" color='1;36'
 if [ -n "${AGENT_ROOT:-}" ]; then
     tf="$AGENT_ROOT/.agents/tasks/$name.txt"
-    wf="$AGENT_ROOT/.agents/workers/$name.json"
+    wf="$AGENT_ROOT/.agents/teammates/$name.json"
     [ -f "$tf" ] && task=$(head -n1 "$tf")
     if [ -f "$wf" ]; then
         [ -z "$task" ] && task=$(jq -r '.task // empty' "$wf")
@@ -32,7 +32,7 @@ line+="$ctx"
 
 printf '%s | %s\n' "$base" "$line"
 
-# Keep the last shown line (without colours) so the boss can see what each window displays.
+# Keep the last shown line (without colours) so the lead can see what each window displays.
 if [ -n "${AGENT_ROOT:-}" ] && [ -n "${AGENT_NAME:-}" ]; then
     mkdir -p "$AGENT_ROOT/.agents/statusline" 2>/dev/null &&
         printf '%s | %s\n' "$base" "$line" | sed 's/\x1b\[[0-9;]*m//g' > "$AGENT_ROOT/.agents/statusline/$name.txt"

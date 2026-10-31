@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Hook script (worker sessions only): turns a permission prompt, dialog or API error into an
-# event file the boss's watcher picks up. One file per event, so simultaneous events never collide.
-# Usage: notify-boss.sh KIND   (hook JSON on stdin)
+# Hook script (teammate sessions only): turns a permission prompt, dialog or API error into an
+# event file the lead's watcher picks up. One file per event, so simultaneous events never collide.
+# Usage: notify-lead.sh KIND   (hook JSON on stdin)
 kind=${1:-event}
 raw=$(cat)
 
 root=${AGENT_ROOT:-$(jq -r '.cwd // empty' <<<"$raw" 2>/dev/null)}
 [ -n "$root" ] || exit 0
-name=${AGENT_NAME:-unknown-worker}
+name=${AGENT_NAME:-unknown-teammate}
 
 type=$(jq -r '[.notification_type, .error_type, .matcher, .reason] | map(select(. != null and . != "")) | first // ""' <<<"$raw" 2>/dev/null)
 msg=$(jq -r '[.message, .error, .error_message, .title] | map(select(. != null and . != "")) | first // ""' <<<"$raw" 2>/dev/null)
@@ -27,8 +27,8 @@ fi
 dir="$root/.agents/events"
 mkdir -p "$dir"
 file="$dir/$(date +%Y%m%d-%H%M%S-%3N)-$name-$kind-$(head -c3 /dev/urandom | od -An -tx1 | tr -d ' \n').json"
-jq -n --arg time "$(date +%Y-%m-%dT%H:%M:%S)" --arg worker "$name" --arg kind "$kind" \
+jq -n --arg time "$(date +%Y-%m-%dT%H:%M:%S)" --arg teammate "$name" --arg kind "$kind" \
     --arg type "$type" --arg message "$msg" \
-    '{time:$time, worker:$worker, kind:$kind, type:$type, message:$message}' > "$file.tmp" \
+    '{time:$time, teammate:$teammate, kind:$kind, type:$type, message:$message}' > "$file.tmp" \
     && mv "$file.tmp" "$file"
 exit 0

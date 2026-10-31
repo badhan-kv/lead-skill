@@ -1,7 +1,7 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "bash \"$HOME/.claude/skills/boss/scripts/run-for-os.sh\" statusline"
+    "command": "bash \"$HOME/.claude/skills/lead/scripts/run-for-os.sh\" statusline"
   },
   "hooks": {
     "PermissionRequest": [
@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/skills/boss/scripts/run-for-os.sh\" notify-boss needs-user"
+            "command": "bash \"$HOME/.claude/skills/lead/scripts/run-for-os.sh\" notify-lead needs-user"
           }
         ]
       }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/skills/boss/scripts/run-for-os.sh\" notify-boss needs-user"
+            "command": "bash \"$HOME/.claude/skills/lead/scripts/run-for-os.sh\" notify-lead needs-user"
           }
         ]
       }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/skills/boss/scripts/run-for-os.sh\" notify-boss api-error"
+            "command": "bash \"$HOME/.claude/skills/lead/scripts/run-for-os.sh\" notify-lead api-error"
           }
         ]
       }

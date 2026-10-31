@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Installs the boss skill on Linux (or macOS): installs missing requirements (tmux, jq) with the
+# Installs the lead skill on Linux (or macOS): installs missing requirements (tmux, jq) with the
 # system package manager, checks for claude and the wrapup skill, then copies this folder to
-# ~/.claude/skills/boss, keeping the runtime state/ already there.
+# ~/.claude/skills/lead, keeping the runtime state/ already there.
 # Usage: bash install.sh
 set -euo pipefail
 src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-dest="$HOME/.claude/skills/boss"
+dest="$HOME/.claude/skills/lead"
 
 missing=()
 for c in tmux jq; do command -v "$c" >/dev/null || missing+=("$c"); done
@@ -18,9 +18,9 @@ if [ ${#missing[@]} -gt 0 ]; then
     else echo "Install ${missing[*]} with your package manager, then run this again." >&2; exit 1
     fi
 fi
-command -v claude >/dev/null || echo "Warning: 'claude' is not on PATH; workers need it."
+command -v claude >/dev/null || echo "Warning: 'claude' is not on PATH; teammates need it."
 [ -f "$HOME/.claude/skills/wrapup/SKILL.md" ] \
-    || echo "Warning: no wrapup skill at ~/.claude/skills/wrapup; worker wrap-up reads it."
+    || echo "Warning: no wrapup skill at ~/.claude/skills/wrapup; teammate wrap-up reads it."
 
 if [ "$src" != "$dest" ]; then
     mkdir -p "$dest"
@@ -29,4 +29,4 @@ fi
 chmod +x "$dest"/scripts/*.sh
 echo "Installed to $dest"
 echo "Optional, SSH auto-attach: add to ~/.bashrc:"
-echo "  [ -f \"\$HOME/.claude/skills/boss/scripts/ssh-login.sh\" ] && . \"\$HOME/.claude/skills/boss/scripts/ssh-login.sh\""
+echo "  [ -f \"\$HOME/.claude/skills/lead/scripts/ssh-login.sh\" ] && . \"\$HOME/.claude/skills/lead/scripts/ssh-login.sh\""

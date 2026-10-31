@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Runs over SSH from boss-ssh.ps1 on the PC the user connects from. Prints one line
-# "SESSION<TAB>WINDOW_ID<TAB>NAME" per worker window that needs a terminal tab there: first the
-# worker windows already open, then each one spawned later from the SSH session started with the
-# same BOSS_TAB_ID.
+# Runs over SSH from lead-ssh.ps1 on the PC the user connects from. Prints one line
+# "SESSION<TAB>WINDOW_ID<TAB>NAME" per teammate window that needs a terminal tab there: first the
+# teammate windows already open, then each one spawned later from the SSH session started with the
+# same LEAD_TAB_ID.
 # Usage: tab-feed.sh TAB_ID
 # An empty line every 20s ends this script once the SSH connection is gone.
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -18,15 +18,15 @@ emit() {
     sent[$2]=1
 }
 
-# Reopen windows for background workers, then send every open worker window.
+# Reopen windows for background teammates, then send every open teammate window.
 if [ -s "$ROOTS_FILE" ]; then
     while IFS= read -r root; do
-        [ -d "$root/.agents/workers" ] || continue
+        [ -d "$root/.agents/teammates" ] || continue
         bash "$SKILL_DIR/scripts/open-windows.sh" --root "$root" >/dev/null 2>&1
-        for f in "$root"/.agents/workers/*.json; do
+        for f in "$root"/.agents/teammates/*.json; do
             [ -f "$f" ] || continue
             IFS=$'\t' read -r st sess wid name < <(jq -r '[.status, .tmuxSession // "", .tmuxWindow // "", .name] | @tsv' "$f")
-            [ "$st" != closed ] && [ "$sess" = "$(boss_tmux_session "$root")" ] && emit "$sess" "$wid" "$name"
+            [ "$st" != closed ] && [ "$sess" = "$(lead_tmux_session "$root")" ] && emit "$sess" "$wid" "$name"
         done
     done < "$ROOTS_FILE"
 fi

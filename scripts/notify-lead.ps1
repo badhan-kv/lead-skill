@@ -1,5 +1,5 @@
-# Hook script (worker sessions only): turns a permission prompt, dialog or API error into an
-# event file the boss's watcher picks up. One file per event, so simultaneous events never collide.
+# Hook script (teammate sessions only): turns a permission prompt, dialog or API error into an
+# event file the lead's watcher picks up. One file per event, so simultaneous events never collide.
 param([string]$Kind = 'event')
 . "$PSScriptRoot\common.ps1"
 
@@ -11,7 +11,7 @@ $root = $env:AGENT_ROOT
 if (-not $root -and $j) { $root = $j.cwd }
 if (-not $root) { exit 0 }
 $name = $env:AGENT_NAME
-if (-not $name) { $name = 'unknown-worker' }
+if (-not $name) { $name = 'unknown-teammate' }
 
 $type = ''
 $msg = ''
@@ -44,7 +44,7 @@ $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss-fff')
 $file = Join-Path (Get-AgentsDir $root) "events\$stamp-$name-$Kind-$([guid]::NewGuid().ToString('N').Substring(0,6)).json"
 Write-Utf8NoBom $file (([pscustomobject]@{
     time    = (Get-Date).ToString('s')
-    worker  = $name
+    teammate  = $name
     kind    = $Kind
     type    = $type
     message = $msg
