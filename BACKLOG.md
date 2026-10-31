@@ -270,3 +270,9 @@ undersold the role, which also takes on engineering work when needed.
 Now: `/lead`; the main session is the lead and the task sessions are still teammates. Renamed
 accordingly (`notify-lead.*`, `record-lead-mode.*`, `.agents/lead.json`, `LEAD_TAB_ID`,
 `lead-<project>`, `lead-ssh.ps1`, `{{LEAD}}`). Entries above keep the old term as written then.
+
+## Change log: repo renamed to lead-skill (2026-10-31)
+Previous approach (entries above): the GitHub repo was `badhan-kv/boss-skill`, named after the
+earlier "boss" skill name.
+Now: `badhan-kv/lead-skill`, matching the skill name. The old URL redirects. README gained a
+clone/upgrade note for users of the old `boss` install.

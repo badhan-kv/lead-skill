@@ -6,6 +6,10 @@ Windows, a tmux window on Linux. Teammates do and document the detailed work and
 to the lead; the lead reports to the user.
 
 ## Requirements and install
+Get it: `git clone https://github.com/badhan-kv/lead-skill`. The repo and skill were previously called
+`boss` / `boss-skill`; the old URL redirects. If you have the old `boss` skill installed, remove
+`~/.claude/skills/boss` after installing this one (command `/lead` replaces `/boss`).
+
 One skill for both systems; the lead picks the script set for the machine it runs on.
 
 | | Windows | Linux |
